@@ -104,15 +104,32 @@ char *generateUniqueID() {
 /* ------------------------------------------------------------------
    Fungsi showCart
    - Menampilkan daftar transaksi (keranjang belanja) yang sudah dimasukkan.
+   - Sebelum menampilkan, transaksi disortir berdasarkan jumlah pembelian
+     (quantity) dari yang paling banyak ke yang paling sedikit.
    - Mencetak nomor transaksi, nama produk, dan jumlah pembelian.
 ------------------------------------------------------------------ */
 void showCart() {
+    // Buat salinan sementara dari array transaksi untuk disortir
+    Transaction sorted[MAX_PRODUCTS];
+    memcpy(sorted, transactions, sizeof(transactions));
+
+    // Bubble sort secara descending berdasarkan quantity (paling banyak ke paling sedikit)
+    for (int i = 0; i < numTransactions - 1; i++) {
+        for (int j = i + 1; j < numTransactions; j++) {
+            if (sorted[i].quantity < sorted[j].quantity) {
+                Transaction temp = sorted[i];
+                sorted[i] = sorted[j];
+                sorted[j] = temp;
+            }
+        }
+    }
+
     printf("\n=========================================\n");
     printf("         Keranjang Belanja Anda         \n");
     printf("=========================================\n");
     for (int i = 0; i < numTransactions; i++) {
-        if (transactions[i].quantity > 0) {
-            printf("| %d | %-16s | %d x\n", i + 1, transactions[i].name, transactions[i].quantity);
+        if (sorted[i].quantity > 0) {
+            printf("| %d | %-16s | %d x\n", i + 1, sorted[i].name, sorted[i].quantity);
         }
     }
     printf("=========================================\n");
@@ -123,6 +140,8 @@ void showCart() {
    - Mencetak struk transaksi ke file .txt dengan format:
      Header Toko, informasi struk, daftar pembelian dengan format kolom,
      dan ringkasan transaksi.
+   - Sebelum mencetak, transaksi disortir berdasarkan jumlah pembelian
+     (quantity) dari yang paling banyak ke yang paling sedikit.
    - Parameter:
      * totalCost    : Total harga sebelum diskon.
      * totalDiscount: Total diskon.
@@ -158,15 +177,29 @@ void printReceipt(int totalCost, int totalDiscount, int totalDue, int payment, i
     fprintf(fptr, "| Nama Barang\t  |   Harga   | Total Harga | Diskon\t   |\n");
     fprintf(fptr, "|==========================================================|\n");
 
+    // Buat salinan sementara dari array transaksi untuk disortir
+    Transaction sorted[MAX_PRODUCTS];
+    memcpy(sorted, transactions, sizeof(transactions));
+    // Bubble sort secara descending berdasarkan quantity
+    for (int i = 0; i < numTransactions - 1; i++) {
+        for (int j = i + 1; j < numTransactions; j++) {
+            if (sorted[i].quantity < sorted[j].quantity) {
+                Transaction temp = sorted[i];
+                sorted[i] = sorted[j];
+                sorted[j] = temp;
+            }
+        }
+    }
+
     // Tulis detail transaksi (hanya transaksi dengan quantity > 0)
-    for (int i = 0; i < MAX_PRODUCTS; i++) {
-        if (transactions[i].quantity > 0) {
+    for (int i = 0; i < numTransactions; i++) {
+        if (sorted[i].quantity > 0) {
             fprintf(fptr, "| %dx %-13s| Rp %-6d | Rp %-9.0f | Rp %-6.0f\t   |\n",
-                    transactions[i].quantity,
-                    transactions[i].name,
-                    transactions[i].price,
-                    transactions[i].total,
-                    transactions[i].discount);
+                    sorted[i].quantity,
+                    sorted[i].name,
+                    sorted[i].price,
+                    sorted[i].total,
+                    sorted[i].discount);
         }
     }
     fprintf(fptr, "|==========================================================|\n");
@@ -236,14 +269,26 @@ int main() {
                 printf("\n=======================================================\n");
                 printf("| No | Jumlah | Barang          | Harga    | Total    | Diskon  |\n");
                 printf("=======================================================\n");
+                // Buat salinan transaksi untuk diurutkan berdasarkan quantity secara descending
+                Transaction sorted[MAX_PRODUCTS];
+                memcpy(sorted, transactions, sizeof(transactions));
+                for (int i = 0; i < numTransactions - 1; i++) {
+                    for (int j = i + 1; j < numTransactions; j++) {
+                        if (sorted[i].quantity < sorted[j].quantity) {
+                            Transaction temp = sorted[i];
+                            sorted[i] = sorted[j];
+                            sorted[j] = temp;
+                        }
+                    }
+                }
                 for (int i = 0; i < numTransactions; i++) {
                     printf("| %-2d | %-6d | %-16s | Rp %-6d | Rp %-6.0f | Rp %-6.0f|\n",
                            i + 1,
-                           transactions[i].quantity,
-                           transactions[i].name,
-                           transactions[i].price,
-                           transactions[i].total,
-                           transactions[i].discount);
+                           sorted[i].quantity,
+                           sorted[i].name,
+                           sorted[i].price,
+                           sorted[i].total,
+                           sorted[i].discount);
                 }
                 printf("=======================================================\n");
                 printf("Total Harga  : Rp %d\n", totalCost);
@@ -296,7 +341,7 @@ int main() {
             transactions[numTransactions].discount = calculateDiscount(products[choice - 1].price, quantity);
             numTransactions++;
 
-            // Tampilkan keranjang belanja yang telah diperbarui
+            // Tampilkan keranjang belanja yang telah diperbarui (sudah diurutkan)
             showCart();
         }
     }
